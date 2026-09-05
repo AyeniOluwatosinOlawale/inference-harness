@@ -1,0 +1,31 @@
+services:
+  sglang:
+    image: lmsysorg/sglang:latest
+    runtime: nvidia
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=${GPU_IDS:-all}
+      - HUGGING_FACE_HUB_TOKEN=${HF_TOKEN:-}
+    command: >
+      python -m sglang.launch_server
+      --model-path ${MODEL_NAME:-meta-llama/Llama-3.1-8B-Instruct}
+      --tp ${TP_DEGREE:-1}
+      --port 30000
+      --host 0.0.0.0
+      --enable-flashinfer
+    ports:
+      - "30000:30000"
+    volumes:
+      - ~/.cache/huggingface:/root/.cache/huggingface
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:30000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 120s
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]

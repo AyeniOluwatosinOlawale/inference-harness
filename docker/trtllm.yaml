@@ -1,0 +1,31 @@
+services:
+  trtllm:
+    image: nvcr.io/nvidia/tritonserver:24.10-trtllm-python-py3
+    runtime: nvidia
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=${GPU_IDS:-all}
+    command: >
+      tritonserver
+      --model-repository /models
+      --grpc-port 8001
+      --http-port 8000
+      --metrics-port 8002
+    ports:
+      - "8000:8000"
+      - "8001:8001"
+      - "8002:8002"
+    volumes:
+      - ${TRTLLM_MODEL_DIR:-./models}:/models
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/v2/health/ready"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 180s
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
